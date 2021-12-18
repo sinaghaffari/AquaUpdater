@@ -29,6 +29,7 @@ object Main {
 
     // Load my discord token
     val token: String = config.getString("discord.token")
+    val serverId: Long = config.getLong("discord.server_id")
     val channelId: Long = config.getLong("discord.channel_id")
 
     // Discord ClientSettings.
@@ -39,7 +40,7 @@ object Main {
       // Login to discord. This will make the bot appear online.
       _ = client.login()
       // Now that the bot is online. Retrieve the channel I'd like to send messages to.
-      (channel, cacheSnapshot) <- channelFromClient(client, channelId).?|
+      (channel, cacheSnapshot) <- channelFromClient(client, serverId, channelId).?|
     } yield {
       // Every 10 seconds.
       system.scheduler.scheduleAtFixedRate(0.seconds, 10.seconds)(() => {
@@ -100,16 +101,18 @@ object Main {
   }
 
   /*
-   * Given a DiscordClient (connection to discord) and a channelId.
-   * It will wait until the bot joins a server and attempt to retrieve the channel with channelId.
-   * Note: This assumes that the bot only joins a single server. This is hacky.
-   *       This bot should NOT join multiple servers. I have no idea what would happen.
+   * Given a DiscordClient (connection to discord) and target server/channel.
+   * It will wait until the bot is connected to the given server and will retrieve a handle to the requested channel.
+   * This handle can be used to send messages to that channel.
+   *
+   * Note: This bot will only work in the server, and the channel defined within application.conf.
+   *       It will do nothing if it joins a different server and it will never post to any other channels.
    */
-  def channelFromClient(client: DiscordClient, channelId: Long): Future[(TextGuildChannel, CacheSnapshot)] = {
+  def channelFromClient(client: DiscordClient, serverId: Long, channelId: Long): Future[(TextGuildChannel, CacheSnapshot)] = {
     val promise = Promise[(TextGuildChannel, CacheSnapshot)]()
     client.onEventSideEffects { implicit c: CacheSnapshot =>
     {
-      case APIMessage.GuildCreate(guild: Guild, _) =>
+      case APIMessage.GuildCreate(guild: Guild, _) if guild.id == GuildId(serverId) =>
         promise.complete(Try(guild.channels.get(GuildChannelId(channelId)).get.asInstanceOf[TextGuildChannel]).map((_, c)))
     }
     }
