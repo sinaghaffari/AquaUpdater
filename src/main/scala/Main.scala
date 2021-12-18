@@ -9,11 +9,12 @@ import org.stellar.sdk.{Asset, AssetTypeCreditAlphaNum12, AssetTypeCreditAlphaNu
 import play.api.libs.json.{JsResultException, JsValue, Json, Reads}
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Future, Promise}
 import scala.util.Try
 import scalacache.modes.scalaFuture._
 import scalacache.guava._
+import scala.jdk.DurationConverters._
 
 object Main {
   def main(args: Array[String]): Unit = {
@@ -27,10 +28,11 @@ object Main {
     // Initialize the cache with an empty map.
     cache.put("oldRewardPairs")(Map.empty[Set[Asset], AquaReward])
 
-    // Load my discord token
+    // Load config
     val token: String = config.getString("discord.token")
     val serverId: Long = config.getLong("discord.server_id")
     val channelId: Long = config.getLong("discord.channel_id")
+    val aquaApiPollInterval: FiniteDuration = config.getDuration("aqua.poll_interval").toScala
 
     // Discord ClientSettings.
     val settings = ClientSettings(token, system = system)
@@ -42,8 +44,8 @@ object Main {
       // Now that the bot is online. Retrieve the channel I'd like to send messages to.
       (channel, cacheSnapshot) <- channelFromClient(client, serverId, channelId).?|
     } yield {
-      // Every 10 seconds.
-      system.scheduler.scheduleAtFixedRate(0.seconds, 10.seconds)(() => {
+      // Repeatedly poll the AQUA API based on the poll_interval defined in application.conf
+      system.scheduler.scheduleAtFixedRate(0.seconds, aquaApiPollInterval)(() => {
         (for {
           // Pull the old reward pairs from the cache
           oldRewardPairs <- cache.get("oldRewardPairs").?|(new Exception("oldRewardPairs not cached"))
