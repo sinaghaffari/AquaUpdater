@@ -88,7 +88,7 @@ object Main {
           client.requestsHelper.run(channel.sendMessage(
             content = "",
             embed = Some(OutgoingEmbed(
-              title = Some("New AQUA Reward Pairs"),
+              title = Some("The AQUA Reward Pairs Have Changed"),
               url = Some("https://aqua.network/rewards"),
               description = Some("Current Reward Amounts: https://aqua.fetus.io"),
               fields = Seq(
