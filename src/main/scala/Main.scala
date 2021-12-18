@@ -71,7 +71,7 @@ object Main {
             .keySet
             .diff(rewardPairs.keySet)
             .map(_.toSeq.sorted.map(assetToCode).mkString("/"))
-          // Future out which pairs were added
+          // Figure out which pairs were added
           addedPairs = rewardPairs
             .keySet
             .diff(oldRewardPairs.keySet)
