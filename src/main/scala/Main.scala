@@ -52,7 +52,7 @@ object Main {
             s"""
               |**Greetings!** I'm AquaUpdater and this is a test message.
               |Once a day when the AQUA Rewards Pairs change I'll post in this channel to let you know!
-              |If you would like to be notified when I post, click the "Follow" button on the bottom right!
+              |If you would like to be notified when I post, enable all notifications for this channel by right clicking on the channel in the channel list.
               |
               |I'm a community run bot, please reach out to <@$supportUserId> if you need support or have any suggestions.
               |""".stripMargin,
