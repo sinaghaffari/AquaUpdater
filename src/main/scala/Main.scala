@@ -32,6 +32,8 @@ object Main {
     val token: String = config.getString("discord.token")
     val serverId: Long = config.getLong("discord.server_id")
     val channelId: Long = config.getLong("discord.channel_id")
+    val supportUserId: Long = config.getLong("discord.support_user_id")
+    val shouldGreet: Boolean = config.getBoolean("discord.should_greet")
     val aquaApiPollInterval: FiniteDuration = config.getDuration("aqua.poll_interval").toScala
 
     // Discord ClientSettings.
@@ -44,6 +46,19 @@ object Main {
       // Now that the bot is online. Retrieve the channel I'd like to send messages to.
       (channel, cacheSnapshot) <- channelFromClient(client, serverId, channelId).?|
     } yield {
+      if (shouldGreet) {
+        client.requestsHelper.run(channel.sendMessage(
+          content =
+            s"""
+              |**Greetings!** I'm AquaUpdater and this is a test message.
+              |Once a day when the AQUA Rewards Pairs change I'll post in this channel to let you know!
+              |If you would like to be notified when I post, click the "Follow" button on the bottom right!
+              |
+              |I'm a community run bot, please reach out to <@$supportUserId> if you need support or have any suggestions.
+              |""".stripMargin,
+
+        ))(cacheSnapshot)
+      }
       // Repeatedly poll the AQUA API based on the poll_interval defined in application.conf
       system.scheduler.scheduleAtFixedRate(0.seconds, aquaApiPollInterval)(() => {
         (for {
